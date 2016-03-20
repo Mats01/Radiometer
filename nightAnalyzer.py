@@ -25,7 +25,7 @@ def analyze():
     #folder = '6.-7.3.2016'
     result_file = '%s-characteristics.csv' % str(datetime.datetime.now().date())
     
-    for file_name in os.listdir('/home/pi/Documents/radiometer'):
+    for file_name in sorted(os.listdir('/home/pi/Documents/radiometer')):
         data = []
         if file_name.endswith(".csv"):
             print file_name
@@ -36,7 +36,9 @@ def analyze():
                     data.append(row)
             finally:
                 f.close()
-
+            if not os.path.exists("/home/pi/Documents/radiometer/%s" % str(datetime.datetime.now().date())):
+                os.mkdir("/home/pi/Documents/radiometer/%s" % str(datetime.datetime.now().date()))
+            shutil.move("/home/pi/Documents/radiometer/" + file_name, "/home/pi/Documents/radiometer/%s/" % str(datetime.datetime.now().date()) + file_name)
             values = []
             if data:
                 for i in data:
@@ -64,8 +66,11 @@ def analyze():
                                  file_name_array.flatten()))
     np.savetxt(result_file.replace(':', '.'), output, fmt=['%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s'], delimiter='-')
 
-    result_file = "/home/pi/Dropbox-Uploader/dropbox_uploader.sh upload /home/pi/Documents/radiometer/%s-characteristics.csv %s-characteristics.csv" % (str(datetime.datetime.now().date()), str(datetime.datetime.now().date()))
-    call([result_file], shell=True)
+    try:
+        result_file = "/home/pi/Dropbox-Uploader/dropbox_uploader.sh upload /home/pi/Documents/radiometer/%s-characteristics.csv %s-characteristics.csv" % (str(datetime.datetime.now().date()), str(datetime.datetime.now().date()))
+        call([result_file], shell=True)
+    except:
+        print "Upload to Dropbox failed!"
     time.sleep(10)
     shutil.move("/home/pi/Documents/radiometer/%s-characteristics.csv" % str(datetime.datetime.now().date()),
                         "/home/pi/Documents/radiometer/characteristics-folder/")

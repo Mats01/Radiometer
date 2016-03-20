@@ -1,8 +1,3 @@
-# This script was designed to run on a Raspbrerry Pi device, and may not be directly compatible with PC-s
-# The script runs a compleately automatizated process of recording and storing data collected from a radiometer device
-# <addiotional info>
-
-
 import ephem
 import datetime
 import time
@@ -12,7 +7,7 @@ import numpy as np
 import threading, Queue
 import logging
 import os
-#import nightAnalyzer
+import nightAnalyzer
 import shutil
 from subprocess import call
 
@@ -209,6 +204,7 @@ ser = initConnection()
 
 analyze = False
 
+
 while 1:
     start_time = work_day_duration(44.869509, 13.853925, 23)[0]
     #start_time = True
@@ -217,10 +213,15 @@ while 1:
         if analyze:
             print "Analyzing..."
             logging.info("Analyzing...")
-			# script still in developing (works on Windows)
-            #nightAnalyzer.analyze()
+            nightAnalyzer.analyze()
+            #result_file = "/home/pi/Dropbox-Uploader/dropbox_uploader.sh upload /home/pi/Documents/radiometer/%s-characteristics.csv %s-characteristics.csv" % (str(datetime.datetime.now().date()), str(datetime.datetime.now().date()))
+            #call([result_file], shell=True)
+            #time.sleep(10)
+            #shutil.move("/home/pi/Documents/radiometer/%s-characteristics.csv" % str(datetime.datetime.now().date()),
+            #            "/home/pi/Documents/radiometer/characteristics-folder/")
             analyze = False
-        if int((start_time - datetime.datetime.now()).total_seconds()) == 0:
+        if int((start_time - datetime.datetime.now()).total_seconds()) <= 0:
+            time.sleep(1)
             continue
         print 'Waiting ' + str(int((start_time - datetime.datetime.now()).total_seconds())) + ' seconds.'
         logging.info('Waiting ' + str(int((start_time - datetime.datetime.now()).total_seconds())) + ' seconds.')
