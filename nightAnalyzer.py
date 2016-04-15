@@ -1,6 +1,5 @@
 import os
 import csv
-#import winsound
 import numpy as np
 import time
 import datetime
@@ -21,9 +20,7 @@ def analyze():
     f_maximum_array = np.array([])
     file_name_array = np.array([])
 
-
-    #folder = '6.-7.3.2016'
-    result_file = '%s-characteristics.csv' % str(datetime.datetime.now().date())
+    result_file = '/home/pi/Documents/radiometer/%s/%s-characteristics.csv' % (str(datetime.datetime.now().date()), str(datetime.datetime.now().date()))
     
     for file_name in sorted(os.listdir('/home/pi/Documents/radiometer')):
         data = []
@@ -66,16 +63,4 @@ def analyze():
                                  file_name_array.flatten()))
     np.savetxt(result_file.replace(':', '.'), output, fmt=['%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s'], delimiter='-')
 
-    try:
-        result_file = "/home/pi/Dropbox-Uploader/dropbox_uploader.sh upload /home/pi/Documents/radiometer/%s-characteristics.csv %s-characteristics.csv" % (str(datetime.datetime.now().date()), str(datetime.datetime.now().date()))
-        call([result_file], shell=True)
-    except:
-        print "Upload to Dropbox failed!"
-    time.sleep(10)
-    shutil.move("/home/pi/Documents/radiometer/%s-characteristics.csv" % str(datetime.datetime.now().date()),
-                        "/home/pi/Documents/radiometer/characteristics-folder/")
     print time.time() - start
-
-# signals the script has finished analyzing the night
-#winsound.PlaySound("SystemExclamation", winsound.SND_ALIAS)
-#winsound.PlaySound("SystemExclamation", winsound.SND_ALIAS)

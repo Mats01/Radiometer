@@ -70,10 +70,10 @@ def waitResponse(ser, char):
 
 def recordData(ser):
     """ Run radiometer data recording for one data block. """
-    data_array = np.array([], dtype=np.uint16)
+    data_list = []
     #times_array = np.array([], dtype=np.float32)
-    times_array = np.array([])
-
+    times_list = []
+    
 
     first_read = True
 
@@ -101,7 +101,8 @@ def recordData(ser):
             if first_read:
                 first_read = False
                 record_start = curr_micro_time()
-                time_start = datetime.datetime.utcnow().strftime("%Y-%m-%d_%H:%M:%S.%f")[0:-3]
+                time_start = datetime.datetime.utcnow().strftime("%Y-%m-%d_%H:%M:%S.%f")
+                first = curr_micro_time()
                 print 'start', time_start
                 logging.info('start ' + str(time_start))
 
@@ -113,8 +114,9 @@ def recordData(ser):
                 # Numpy arrays
                 #data_array = np.append(data_array, [4096-serial_value])
 
-                times_array = np.append(times_array, [datetime.datetime.utcnow().strftime("%Y%m%d-%H%M%S.%f")])
-                data_array = np.append(data_array, [serial_value])
+                #times_array.append(datetime.datetime.utcnow().strftime("%Y%m%d-%H%M%S.%f"))
+                times_array.append(curr_micro_time() - first)
+                data_array.append(serial_value)
 
 
             except:
@@ -175,24 +177,23 @@ def writeData():
             file_name = str(data[0]) + '.csv'
             times_array = data[1]
             data_array = data[2]
+            times_array = np.array(times_array)
+            data_array = np.array(data_array)
             output = np.column_stack((times_array.flatten(), data_array.flatten()))
             #np.savetxt(file_name.replace(':', '.'), output, fmt = ['%2.5f', '%d'], delimiter = ',')
             np.savetxt(file_name.replace(':', '.'), output, fmt = ['%s', '%s'], delimiter = ',')
-        time.sleep(5)
+        time.sleep(1)
 
+# initiate logging
 logging.basicConfig(filename='record_log.log', level=logging.INFO, format='%(asctime)s %(message)s', datefmt='%Y/%m/%d-%H:%M:%S')
 
+# set a thread which writes data to files
 q = Queue.Queue()
 thread1 = threading.Thread(target=writeData)
-
-# Record duration in hours
-#record_duration = 30.0/60/60.0 #hrs
-#record_duration = 8 #hrs
 
 # Duration of a single time block in seconds
 data_block_time = 10.24 #s
 
-#print 'Recording duration: ', record_duration, 'hrs'
 print 'Data block duration: ', data_block_time, 's'
 logging.info('Data block duration: ' + str(data_block_time) + 's')
 
@@ -202,31 +203,31 @@ thread1.start()
 # Initialize connection
 ser = initConnection()
 
+# used to determin whether the analizing script should be called
 analyze = False
+counter = 0
 
-
-while 1:
-    start_time = work_day_duration(44.869509, 13.853925, 23)[0]
-    #start_time = True
-    #Wait for start
-    if start_time != True:
-        if analyze:
-            print "Analyzing..."
-            logging.info("Analyzing...")
-            nightAnalyzer.analyze()
-            #result_file = "/home/pi/Dropbox-Uploader/dropbox_uploader.sh upload /home/pi/Documents/radiometer/%s-characteristics.csv %s-characteristics.csv" % (str(datetime.datetime.now().date()), str(datetime.datetime.now().date()))
-            #call([result_file], shell=True)
-            #time.sleep(10)
-            #shutil.move("/home/pi/Documents/radiometer/%s-characteristics.csv" % str(datetime.datetime.now().date()),
-            #            "/home/pi/Documents/radiometer/characteristics-folder/")
-            analyze = False
-        if int((start_time - datetime.datetime.now()).total_seconds()) <= 0:
-            time.sleep(1)
-            continue
-        print 'Waiting ' + str(int((start_time - datetime.datetime.now()).total_seconds())) + ' seconds.'
-        logging.info('Waiting ' + str(int((start_time - datetime.datetime.now()).total_seconds())) + ' seconds.')
-        time.sleep(int((start_time - datetime.datetime.now()).total_seconds()))
+while True:
+    if counter == 0:
+        if  work_day_duration(44.869509, 13.853925, 23)[0] == True:
+            rising = ephem.localtime(ephem.Observer().next_rising(ephem.Sun()))
+            counter = ((rising - datetime.datetime.utcnow()).total_seconds()) / 10.24
+        
+        else:
+            if analyze:
+                print "Analyzing..."
+                logging.info("Analyzing...")
+                nightAnalyzer.analyze()
+                analyze = False
+            if int((start_time - datetime.datetime.now()).total_seconds()) <= 0:
+                time.sleep(1)
+                continue
+            print 'Waiting ' + str(int((start_time - datetime.datetime.now()).total_seconds())) + ' seconds.'
+            logging.info('Waiting ' + str(int((start_time - datetime.datetime.now()).total_seconds())) + ' seconds.')
+            time.sleep(int((start_time - datetime.datetime.now()).total_seconds()))
+    
     else:
+        counter -= 1
         analyze = True
         # Run data recording
         time_start, times_array, data_array = recordData(ser)
