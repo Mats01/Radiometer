@@ -115,8 +115,8 @@ def recordData(ser):
                 #data_array = np.append(data_array, [4096-serial_value])
 
                 #times_array.append(datetime.datetime.utcnow().strftime("%Y%m%d-%H%M%S.%f"))
-                times_array.append(curr_micro_time() - first)
-                data_array.append(serial_value)
+                times_list.append(round((curr_micro_time() - first)/1000000.0, 6))
+                data_list.append(serial_value)
 
 
             except:
@@ -129,11 +129,11 @@ def recordData(ser):
     run_duration = curr_micro_time() - record_start
 
     # Samples per second
-    sps = len(data_array) / (run_duration / 1000000.00)
+    sps = len(data_list) / (run_duration / 1000000.00)
     print 'Calculated SPS: ', sps
     logging.info('Calculated SPS: ' + str(sps))
 
-    return time_start, times_array, data_array
+    return time_start, times_list, data_list
 
 
 def initConnection(port = '/dev/ttyUSB0'):
@@ -209,7 +209,8 @@ counter = 0
 
 while True:
     if counter == 0:
-        if  work_day_duration(44.869509, 13.853925, 23)[0] == True:
+        start_time = work_day_duration(44.869509, 13.853925, 23)[0] 
+        if  start_time == True:
             rising = ephem.localtime(ephem.Observer().next_rising(ephem.Sun()))
             counter = ((rising - datetime.datetime.utcnow()).total_seconds()) / 10.24
         
@@ -218,10 +219,7 @@ while True:
                 print "Analyzing..."
                 logging.info("Analyzing...")
                 nightAnalyzer.analyze()
-                analyze = False
-            if int((start_time - datetime.datetime.now()).total_seconds()) <= 0:
-                time.sleep(1)
-                continue
+                analyze = False   
             print 'Waiting ' + str(int((start_time - datetime.datetime.now()).total_seconds())) + ' seconds.'
             logging.info('Waiting ' + str(int((start_time - datetime.datetime.now()).total_seconds())) + ' seconds.')
             time.sleep(int((start_time - datetime.datetime.now()).total_seconds()))
@@ -236,8 +234,8 @@ while True:
         #writeData(str(time_start) + '.csv', times_array, data_array)
         q.put((time_start, times_array, data_array))
 
-        print 'data' +  str(data_array)
-        logging.info('data' +  str(data_array))
+        #print 'data' +  str(data_array)
+        #logging.info('data' +  str(data_array))
 
     # Close connection
     #closeConnection(ser)
